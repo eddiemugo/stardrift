@@ -15,8 +15,7 @@
 ## 🎮 Try It Now (No Godot Needed)
 
 Open **`stardrift_demo.html`** in any modern browser for an instant playable demo.
-This is a faithful JavaScript port of the same game logic — great for showing recruiters
-a live build without needing them to install Godot.
+This is a faithful JavaScript port of the same game logic
 
 ### Controls
 
