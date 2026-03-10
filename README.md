@@ -1,4 +1,4 @@
-# ⭐ StarDrift — Godot 4 Portfolio Platformer
+# StarDrift — Godot 4
 
 > A polished 2D side-scrolling platformer built in **Godot 4.3** to demonstrate
 > professional GDScript skills, clean architecture, and modern game-feel techniques.
