@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StarDrift — Godot Portfolio Demo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@300;400;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sky: #0d0f2b;
+    --star: #e8f4ff;
+    --gold: #ffd54f;
+    --teal: #4dd0e1;
+    --coral: #ef5350;
+    --green: #69f0ae;
+    --purple: #ce93d8;
+    --ground: #3a4a6b;
+    --platform: #4a6741;
+    --platform-top: #69f0ae;
+    --coin: #ffd54f;
+    --player: #4dd0e1;
+    --enemy: #ef5350;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--sky);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-start;
+    font-family: 'Outfit', sans-serif;
+    color: var(--star);
+    overflow-x: hidden;
+  }
+
+  header {
+    width: 100%; max-width: 900px;
+    padding: 18px 24px 8px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px;
+  }
+
+  .logo {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    color: var(--gold);
+    text-shadow: 0 0 12px rgba(255,213,79,0.6);
+    letter-spacing: 2px;
+  }
+
+  .badge {
+    font-size: 11px;
+    background: rgba(77,208,225,0.15);
+    border: 1px solid rgba(77,208,225,0.4);
+    color: var(--teal);
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+  }
+
+  #game-wrap {
+    position: relative;
+    width: 100%; max-width: 900px;
+    margin: 0 16px;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 2px solid rgba(77,208,225,0.3);
+    border-radius: 4px;
+    image-rendering: pixelated;
+    background: var(--sky);
+    box-shadow: 0 0 40px rgba(77,208,225,0.15), 0 0 80px rgba(13,15,43,0.8);
+  }
+
+  #overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: rgba(13,15,43,0.88);
+    border-radius: 4px;
+    gap: 18px;
+    transition: opacity 0.4s;
+  }
+
+  #overlay.hidden { opacity: 0; pointer-events: none; }
+
+  .overlay-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(12px, 3vw, 22px);
+    color: var(--gold);
+    text-shadow: 0 0 20px rgba(255,213,79,0.7);
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .overlay-sub {
+    font-size: clamp(10px, 2vw, 14px);
+    color: rgba(232,244,255,0.7);
+    text-align: center;
+    line-height: 1.8;
+  }
+
+  .start-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(9px, 2vw, 13px);
+    background: var(--gold);
+    color: #1a1200;
+    border: none;
+    padding: 14px 28px;
+    cursor: pointer;
+    border-radius: 2px;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 0 #b8860b, 0 0 20px rgba(255,213,79,0.4);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .start-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #b8860b, 0 0 30px rgba(255,213,79,0.5); }
+  .start-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #b8860b; }
+
+  #hud {
+    width: 100%; max-width: 900px;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 6px 4px;
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+
+  .hud-block { display: flex; align-items: center; gap: 8px; }
+  .hud-label { color: rgba(232,244,255,0.5); font-size: 11px; }
+  .hud-value { color: var(--gold); font-family: 'Press Start 2P', monospace; font-size: 11px; }
+  .heart { color: var(--coral); font-size: 14px; }
+
+  #controls-bar {
+    width: 100%; max-width: 900px;
+    padding: 10px 6px 4px;
+    display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+  }
+
+  .ctrl {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: rgba(232,244,255,0.55);
+  }
+  .key {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-bottom: 3px solid rgba(255,255,255,0.08);
+    color: var(--star);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    letter-spacing: 0;
+  }
+
+  #godot-note {
+    width: 100%; max-width: 900px;
+    margin: 14px 16px 20px;
+    padding: 14px 18px;
+    background: rgba(255,213,79,0.05);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 4px 4px 0;
+    font-size: 12px;
+    color: rgba(232,244,255,0.65);
+    line-height: 1.7;
+  }
+  #godot-note strong { color: var(--gold); }
+  #godot-note code {
+    background: rgba(255,255,255,0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+    color: var(--teal);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">★ STARDRIFT</div>
+  <div class="badge">Godot 4 Portfolio Sample</div>
+</header>
+
+<div id="hud">
+  <div class="hud-block">
+    <span class="hud-label">SCORE</span>
+    <span class="hud-value" id="h-score">000000</span>
+  </div>
+  <div class="hud-block">
+    <span id="h-hearts">❤️❤️❤️</span>
+  </div>
+  <div class="hud-block">
+    <span class="hud-label">LEVEL</span>
+    <span class="hud-value" id="h-level">1</span>
+    <span class="hud-label" style="margin-left:12px">BEST</span>
+    <span class="hud-value" id="h-best">000000</span>
+  </div>
+</div>
+
+<div id="game-wrap">
+  <canvas id="c" width="900" height="480"></canvas>
+  <div id="overlay">
+    <div class="overlay-title">⭐ STARDRIFT ⭐</div>
+    <div class="overlay-sub">
+      A Godot 4 Portfolio Demo<br>
+      Collect coins · Stomp enemies · Reach the star
+    </div>
+    <button class="start-btn" id="startBtn">▶ START GAME</button>
+  </div>
+</div>
+
+<div id="controls-bar">
+  <div class="ctrl"><span class="key">A</span><span class="key">D</span> Move</div>
+  <div class="ctrl"><span class="key">SPACE</span> Jump</div>
+  <div class="ctrl"><span class="key">E</span> Dash</div>
+  <div class="ctrl"><span class="key">R</span> Restart</div>
+  <div class="ctrl" style="color:rgba(232,244,255,0.35)">— or use on-screen buttons —</div>
+</div>
+
+<div id="godot-note">
+  <strong>📁 Godot 4 Source Included</strong> — Download the project ZIP for the full
+  <code>Player.gd</code> (state machine, coyote time, wall-jump, dash),
+  <code>GameManager.gd</code> autoload singleton, <code>Enemy.gd</code> patrol AI,
+  <code>MovingPlatform.gd</code>, and more.
+  This browser preview is a faithful JavaScript replica of the same game logic.
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//  StarDrift — JavaScript port of the Godot 4 platformer demo
+//  Mirrors the architecture in the GDScript files exactly:
+//  State Machine, Coyote Time, Jump Buffer, Wall-Slide, Dash, etc.
+// ═══════════════════════════════════════════════════════════════════
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = 900, H = 480;
+
+// ── Input ────────────────────────────────────────────────────────
+const keys = {};
+document.addEventListener('keydown', e => { keys[e.code] = true; if(['Space','ArrowUp','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault(); });
+document.addEventListener('keyup',   e => { keys[e.code] = false; });
+
+// ── Game State ───────────────────────────────────────────────────
+let score = 0, lives = 3, level = 1, highScore = 0;
+let running = false, gameOver = false;
+
+// ── Camera ───────────────────────────────────────────────────────
+let camX = 0, camY = 0;
+
+// ── Level Data ───────────────────────────────────────────────────
+const TILE = 32;
+
+function buildLevel(lvl) {
+  const map = [];
+  const enemyDefs = [];
+  const coinDefs = [];
+  let goalX = 1700, goalY = 200;
+
+  // Ground row
+  for(let x = 0; x < 60; x++) map.push({x: x*TILE, y: H-TILE*2, w: TILE, h: TILE*3, col:'#3a4a6b', top:'#4dd0e1'});
+
+  // Platforms - get harder per level
+  const platforms = [
+    {x:180, y:340}, {x:300, y:290}, {x:440, y:240}, {x:560, y:300},
+    {x:680, y:250}, {x:820, y:300}, {x:940, y:200}, {x:1060, y:270},
+    {x:1200, y:220}, {x:1380, y:280}, {x:1520, y:180}, {x:1680, y:240},
+  ];
+
+  platforms.forEach((p,i) => {
+    const w = 100 + (i%3)*20;
+    map.push({x: p.x, y: p.y, w: w, h: TILE, col:'#4a6741', top:'#69f0ae',
+              moving: i%3===1, moveAx:'x', moveDist:80+(lvl*10), moveSpd:50+(lvl*8), _ox:p.x, _t:i*0.5});
+  });
+
+  // Coins
+  platforms.forEach((p,i) => {
+    const n = 2 + (i%3);
+    for(let c=0; c<n; c++) coinDefs.push({x: p.x+20+(c*28), y: p.y-24, collected:false});
+  });
+
+  // Enemies
+  [platforms[1], platforms[4], platforms[7], platforms[10]].forEach((p,i) => {
+    if(p) enemyDefs.push({x: p.x+30, y: p.y-28, vx: (40+i*5+lvl*5)*(i%2?1:-1),
+                          w:22, h:26, dead:false, deadTimer:0,
+                          leftBound: p.x+4, rightBound: p.x+80, onGround:false});
+  });
+
+  goalX = 1700; goalY = 170;
+
+  return { tiles: map, coins: coinDefs, enemies: enemyDefs, goal: {x:goalX, y:goalY, r:20, reached:false} };
+}
+
+let levelData = buildLevel(1);
+
+// ── Player ───────────────────────────────────────────────────────
+const PLAYER = {
+  x: 60, y: 350, w: 22, h: 30,
+  vx: 0, vy: 0,
+  onGround: false, onWall: false,
+  facingRight: true,
+  state: 'idle',   // idle run jump fall wallslide dash dead
+  coyoteTimer: 0,
+  jumpBuffer: 0,
+  wallJumpLock: 0,
+  dashTimer: 0, dashCool: 0, dashing: false, dashDir: 1, canDash: true,
+  deadTimer: 0,
+  trail: [],
+  // constants (mirrors GDScript exports)
+  SPEED: 180, ACC: 1600, FRIC: 1400, AIRFRIC: 500,
+  JUMP: -420, GRAV: 900, FALLMULT: 1.55,
+  COYOTE: 0.12, JBUF: 0.12, WJLOCK: 0.18,
+  DASHSPD: 520, DASHDUR: 0.18, DASHCOOL: 0.7,
+};
+
+function resetPlayer() {
+  Object.assign(PLAYER, {
+    x:60, y:320, vx:0, vy:0,
+    onGround:false, onWall:false, facingRight:true,
+    state:'idle', coyoteTimer:0, jumpBuffer:0, wallJumpLock:0,
+    dashTimer:0, dashCool:0, dashing:false, canDash:true, deadTimer:0, trail:[]
+  });
+  camX = 0; camY = 0;
+}
+
+// ── Particles ────────────────────────────────────────────────────
+let particles = [];
+function spawnParticles(x, y, color, n=8, speed=120) {
+  for(let i=0;i<n;i++) {
+    const a = Math.random()*Math.PI*2;
+    const s = speed*(0.4+Math.random()*0.6);
+    particles.push({x,y, vx:Math.cos(a)*s, vy:Math.sin(a)*s,
+                    life:1, maxLife:0.5+Math.random()*0.3, color, r:3+Math.random()*3});
+  }
+}
+
+// ── Collision Helpers ────────────────────────────────────────────
+function rectsOverlap(ax,ay,aw,ah, bx,by,bw,bh) {
+  return ax<bx+bw && ax+aw>bx && ay<by+bh && ay+ah>by;
+}
+
+function resolvePlayer(dt) {
+  const P = PLAYER;
+  const wasOnGround = P.onGround;
+  P.onGround = false; P.onWall = false;
+
+  for(const t of levelData.tiles) {
+    const tx = t.moving && t.moveAx==='x' ? t._cx : t.x;
+    if(!rectsOverlap(P.x,P.y,P.w,P.h, tx,t.y,t.w,t.h)) continue;
+
+    // overlap amounts
+    const overlapL = (P.x+P.w) - tx;
+    const overlapR = (tx+t.w) - P.x;
+    const overlapT = (P.y+P.h) - t.y;
+    const overlapB = (t.y+t.h) - P.y;
+    const minOv = Math.min(overlapL, overlapR, overlapT, overlapB);
+
+    if(minOv === overlapT && P.vy >= 0) {
+      P.y = t.y - P.h;
+      P.vy = 0; P.onGround = true;
+      if(!wasOnGround) {
+        spawnParticles(P.x+P.w/2, P.y+P.h, '#4dd0e1', 8, 80);
+      }
+      // Moving platform carry
+      if(t.moving && t._vel) P.x += t._vel * dt;
+    } else if(minOv === overlapB && P.vy < 0) {
+      P.y = t.y + t.h; P.vy = 0;
+    } else if(minOv === overlapL) {
+      P.x = tx - P.w; P.onWall = true; if(P.vx>0) P.vx=0;
+    } else if(minOv === overlapR) {
+      P.x = tx + t.w; P.onWall = true; if(P.vx<0) P.vx=0;
+    }
+  }
+
+  // World bounds
+  if(P.x < 0) { P.x = 0; P.vx = 0; }
+}
+
+// ── Update ───────────────────────────────────────────────────────
+function update(dt) {
+  if(!running || gameOver) return;
+
+  const P = PLAYER;
+  if(P.state === 'dead') {
+    P.deadTimer -= dt;
+    if(P.deadTimer <= 0) {
+      lives--;
+      updateHUD();
+      if(lives <= 0) { gameOver = true; showOverlay('GAME OVER','Score: '+fmtScore(score),'▶ PLAY AGAIN'); return; }
+      levelData = buildLevel(level);
+      resetPlayer();
+    }
+    return;
+  }
+
+  // ── Timers
+  if(P.onGround && !P.onGround) P.coyoteTimer = P.COYOTE;
+  P.coyoteTimer = Math.max(0, P.coyoteTimer - dt);
+  P.jumpBuffer  = Math.max(0, P.jumpBuffer  - dt);
+  P.wallJumpLock = Math.max(0, P.wallJumpLock - dt);
+  P.dashCool = Math.max(0, P.dashCool - dt);
+  if(P.dashCool <= 0) P.canDash = true;
+
+  // ── Dash
+  if(P.dashing) {
+    P.dashTimer -= dt;
+    P.trail.push({x: P.x+P.w/2, y: P.y+P.h/2, life:1});
+    if(P.dashTimer <= 0) {
+      P.dashing = false;
+      P.vx = P.dashDir * P.SPEED;
+    }
+  }
+
+  // ── Update moving platforms
+  for(const t of levelData.tiles) {
+    if(!t.moving) continue;
+    t._t = (t._t||0) + dt;
+    const prev = t._cx !== undefined ? t._cx : t.x;
+    t._cx = t._ox + Math.sin(t._t * (t.moveSpd/50)) * t.moveDist;
+    t._vel = (t._cx - prev) / dt;
+  }
+
+  if(!P.dashing) {
+    // ── Gravity
+    const wallSliding = P.onWall && !P.onGround && P.vy > 0;
+    if(!P.onGround) {
+      const grav = wallSliding ? 80 : (P.vy > 0 ? P.GRAV*P.FALLMULT : P.GRAV);
+      P.vy += grav * dt;
+      if(P.vy > 900) P.vy = 900;
+    }
+
+    // ── Horizontal input
+    let dir = 0;
+    if((keys['KeyA']||keys['ArrowLeft'])  && P.wallJumpLock<=0) dir -= 1;
+    if((keys['KeyD']||keys['ArrowRight']) && P.wallJumpLock<=0) dir += 1;
+    if(dir !== 0) P.facingRight = dir > 0;
+
+    const targetVx = dir * P.SPEED;
+    const accel = P.onGround ? (dir!==0 ? P.ACC : P.FRIC) : P.AIRFRIC;
+    const diff = targetVx - P.vx;
+    const step = accel * dt;
+    P.vx += Math.sign(diff) * Math.min(Math.abs(diff), step);
+
+    // ── Jump (with coyote & buffer)
+    const jumpPressed = keys['Space']||keys['ArrowUp']||keys['KeyW'];
+    if(jumpPressed && P.jumpBuffer<=0) P.jumpBuffer = P.JBUF;
+
+    const canJump = P.onGround || P.coyoteTimer > 0;
+    if(P.jumpBuffer > 0 && canJump) {
+      P.vy = P.JUMP; P.jumpBuffer = 0; P.coyoteTimer = 0;
+      spawnParticles(P.x+P.w/2, P.y+P.h, '#4dd0e1', 6, 100);
+    } else if(P.jumpBuffer > 0 && wallSliding) {
+      const wn = P.facingRight ? -1 : 1;
+      P.vx = wn * 260; P.vy = -380;
+      P.wallJumpLock = P.WJLOCK; P.jumpBuffer = 0;
+      spawnParticles(P.x+P.w/2, P.y+P.h/2, '#ce93d8', 8, 120);
+    }
+
+    // Variable jump height
+    if(!jumpPressed && P.vy < 0) P.vy *= (1 - 3*dt); // gentle cut
+
+    // ── Dash input
+    if((keys['KeyE']||keys['ShiftLeft']||keys['ShiftRight']) && P.canDash && P.dashCool<=0) {
+      P.dashing = true; P.dashTimer = P.DASHDUR;
+      P.dashDir = P.facingRight ? 1 : -1;
+      P.dashCool = P.DASHCOOL; P.canDash = false;
+      P.vy = 0;
+    }
+  }
+
+  if(P.dashing) {
+    P.vx = P.dashDir * P.DASHSPD;
+    P.vy = 0;
+  }
+
+  // ── Move
+  const prevOnGround = P.onGround;
+  P.x += P.vx * dt;
+  P.y += P.vy * dt;
+  resolvePlayer(dt);
+
+  // Coyote: just left ground
+  if(prevOnGround && !P.onGround && P.vy >= 0) P.coyoteTimer = P.COYOTE;
+
+  // ── State
+  const wallSliding2 = P.onWall && !P.onGround && P.vy > 0;
+  if(P.dashing)         P.state='dash';
+  else if(P.onGround)   P.state = Math.abs(P.vx)>10 ? 'run' : 'idle';
+  else if(wallSliding2) P.state='wallslide';
+  else if(P.vy<0)       P.state='jump';
+  else                  P.state='fall';
+
+  // Trail decay
+  P.trail = P.trail.filter(t => { t.life -= dt*4; return t.life>0; });
+
+  // ── Death (fall off world)
+  if(P.y > H + 100) { killPlayer(); return; }
+
+  // ── Coins
+  for(const coin of levelData.coins) {
+    if(coin.collected) continue;
+    if(rectsOverlap(P.x,P.y,P.w,P.h, coin.x-8,coin.y-8,16,16)) {
+      coin.collected = true;
+      score += 10; if(score>highScore) highScore=score;
+      updateHUD();
+      spawnParticles(coin.x, coin.y, '#ffd54f', 12, 140);
+    }
+  }
+
+  // ── Enemies
+  for(const e of levelData.enemies) {
+    if(e.dead) { e.deadTimer -= dt; continue; }
+    e.x += e.vx * dt;
+    if(e.x <= e.leftBound)  { e.x = e.leftBound;  e.vx = Math.abs(e.vx); }
+    if(e.x >= e.rightBound) { e.x = e.rightBound; e.vx = -Math.abs(e.vx); }
+
+    if(rectsOverlap(P.x,P.y,P.w,P.h, e.x,e.y,e.w,e.h)) {
+      // Stomp: player above enemy center
+      if(P.vy > 0 && P.y + P.h < e.y + e.h/2 + 10) {
+        e.dead = true; e.deadTimer = 0.5;
+        P.vy = -320;
+        score += 50; if(score>highScore) highScore=score;
+        updateHUD();
+        spawnParticles(e.x+e.w/2, e.y+e.h/2, '#ef5350', 14, 150);
+      } else {
+        killPlayer(); return;
+      }
+    }
+  }
+
+  // ── Level Goal
+  const g = levelData.goal;
+  const dx = (P.x+P.w/2) - g.x, dy = (P.y+P.h/2) - g.y;
+  if(!g.reached && Math.sqrt(dx*dx+dy*dy) < g.r + 14) {
+    g.reached = true;
+    score += 200; level++;
+    if(score>highScore) highScore=score;
+    updateHUD();
+    spawnParticles(g.x, g.y, '#ffd54f', 30, 200);
+    setTimeout(() => { levelData = buildLevel(level); resetPlayer(); }, 800);
+  }
+
+  // ── Camera
+  const targetX = P.x - W/2.5;
+  const targetY = P.y - H/2;
+  camX += (targetX - camX) * 5 * dt;
+  camY += (targetY - camY) * 4 * dt;
+  camX = Math.max(0, camX);
+  camY = Math.max(-150, Math.min(camY, 60));
+
+  // ── Particles
+  for(const p of particles) {
+    p.x += p.vx*dt; p.y += p.vy*dt;
+    p.vy += 200*dt;
+    p.life -= dt / p.maxLife;
+  }
+  particles = particles.filter(p => p.life>0);
+
+  // Restart key
+  if(keys['KeyR']) { score=0; lives=3; level=1; updateHUD(); levelData=buildLevel(1); resetPlayer(); }
+}
+
+function killPlayer() {
+  const P = PLAYER;
+  P.state='dead'; P.deadTimer=1.0; P.vx=0; P.vy=-300;
+  spawnParticles(P.x+P.w/2, P.y+P.h/2, '#ef5350', 16, 160);
+}
+
+// ── Drawing ──────────────────────────────────────────────────────
+const T = (x,y) => [x-camX, y-camY]; // world→screen
+
+function draw(now) {
+  ctx.clearRect(0,0,W,H);
+
+  // ── Sky gradient
+  const sky = ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#070920'); sky.addColorStop(1,'#1a2a5e');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+  // ── Stars (parallax)
+  ctx.fillStyle='rgba(232,244,255,0.6)';
+  for(let i=0;i<80;i++) {
+    const sx = ((i*137+50)%W - camX*0.08)%W;
+    const sy = ((i*97+20)%200);
+    const blink = 0.5+0.5*Math.sin(now*0.001*((i%5)+1)+i);
+    ctx.globalAlpha = 0.3+0.7*blink;
+    ctx.fillRect(((sx%W+W)%W), sy, 1.5,1.5);
+  }
+  ctx.globalAlpha=1;
+
+  // ── Tiles
+  for(const t of levelData.tiles) {
+    const tx = t.moving && t._cx!==undefined ? t._cx : t.x;
+    const [sx,sy] = T(tx, t.y);
+    ctx.fillStyle = t.col;
+    ctx.fillRect(sx, sy, t.w, t.h);
+    ctx.fillStyle = t.top || '#4dd0e1';
+    ctx.fillRect(sx, sy, t.w, 4);
+  }
+
+  // ── Goal
+  const g = levelData.goal;
+  if(!g.reached) {
+    const [gsx,gsy] = T(g.x, g.y);
+    const pulse = 0.85+0.15*Math.sin(now*0.003);
+    ctx.save();
+    ctx.translate(gsx, gsy);
+    ctx.rotate(now*0.001);
+    ctx.scale(pulse,pulse);
+    // Draw star
+    ctx.fillStyle='#ffd54f';
+    ctx.shadowColor='#ffd54f'; ctx.shadowBlur=20;
+    drawStar(ctx, 0, 0, g.r, g.r*0.45, 5);
+    ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.restore();
+  }
+
+  // ── Coins
+  for(const coin of levelData.coins) {
+    if(coin.collected) continue;
+    const [cx,cy] = T(coin.x, coin.y);
+    const bob = Math.sin(now*0.003)*4;
+    ctx.save();
+    ctx.translate(cx, cy+bob);
+    ctx.fillStyle='#ffd54f';
+    ctx.shadowColor='#ffd54f'; ctx.shadowBlur=10;
+    ctx.beginPath(); ctx.arc(0,0,7,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.shadowBlur=0;
+    ctx.beginPath(); ctx.arc(-2,-2,2.5,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  // ── Enemies
+  for(const e of levelData.enemies) {
+    if(e.dead) continue;
+    const [ex,ey] = T(e.x, e.y);
+    ctx.fillStyle='#ef5350';
+    ctx.fillRect(ex, ey, e.w, e.h);
+    // Eyes
+    ctx.fillStyle='white';
+    ctx.fillRect(ex+4, ey+4, 5, 5);
+    ctx.fillRect(ex+13, ey+4, 5, 5);
+    ctx.fillStyle='#1a0000';
+    const eyeDir = e.vx>0?1:-1;
+    ctx.fillRect(ex+4+eyeDir, ey+5, 3, 3);
+    ctx.fillRect(ex+13+eyeDir, ey+5, 3, 3);
+    // Feet animation
+    const ft = Math.sin(now*0.01)*3;
+    ctx.fillStyle='#c62828';
+    ctx.fillRect(ex+2, ey+e.h-5+ft, 7, 5);
+    ctx.fillRect(ex+e.w-9, ey+e.h-5-ft, 7, 5);
+  }
+
+  // ── Dash trail
+  const P = PLAYER;
+  for(const t of P.trail) {
+    const [tx,ty] = T(t.x, t.y);
+    ctx.globalAlpha = t.life*0.4;
+    ctx.fillStyle='#4dd0e1';
+    ctx.fillRect(tx-P.w/2, ty-P.h/2, P.w, P.h);
+  }
+  ctx.globalAlpha=1;
+
+  // ── Player
+  if(P.state !== 'dead') {
+    const [px,py] = T(P.x, P.y);
+    ctx.save();
+
+    // Body
+    const bodyColor = P.dashing ? '#00e5ff' : '#4dd0e1';
+    ctx.fillStyle = bodyColor;
+    if(P.dashing) { ctx.shadowColor='#00e5ff'; ctx.shadowBlur=16; }
+    ctx.fillRect(px, py, P.w, P.h);
+    ctx.shadowBlur=0;
+
+    // Eyes
+    const eyeOffX = P.facingRight ? 10 : 2;
+    ctx.fillStyle='white';
+    ctx.fillRect(px+eyeOffX, py+6, 8, 7);
+    ctx.fillStyle='#0a2030';
+    ctx.fillRect(px+eyeOffX+(P.facingRight?3:1), py+8, 4, 4);
+
+    // State indicators
+    if(P.state==='jump'||P.state==='fall') {
+      // Squash/stretch
+      ctx.fillStyle='rgba(77,208,225,0.25)';
+      const stretch = P.state==='jump' ? -6 : 4;
+      ctx.fillRect(px+2, py+stretch, P.w-4, P.h);
+    }
+    if(P.state==='wallslide') {
+      ctx.fillStyle='rgba(206,147,216,0.6)';
+      ctx.fillRect(P.facingRight ? px+P.w-3 : px, py, 4, P.h);
+    }
+
+    // Dash cooldown indicator (small bar above head)
+    if(!P.canDash) {
+      const pct = 1 - (P.dashCool / P.DASHCOOL);
+      ctx.fillStyle='rgba(0,0,0,0.5)';
+      ctx.fillRect(px, py-8, P.w, 4);
+      ctx.fillStyle='#ce93d8';
+      ctx.fillRect(px, py-8, P.w*pct, 4);
+    }
+
+    ctx.restore();
+  }
+
+  // ── Particles
+  for(const p of particles) {
+    const [px,py] = T(p.x, p.y);
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(px,py,p.r,0,Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+
+  // ── Screen flash on dash
+  if(P.dashing) {
+    ctx.fillStyle='rgba(0,229,255,0.05)';
+    ctx.fillRect(0,0,W,H);
+  }
+}
+
+function drawStar(ctx, cx, cy, outerR, innerR, points) {
+  ctx.beginPath();
+  for(let i=0;i<points*2;i++) {
+    const r = i%2===0 ? outerR : innerR;
+    const a = (i*Math.PI)/points - Math.PI/2;
+    i===0 ? ctx.moveTo(cx+r*Math.cos(a), cy+r*Math.sin(a))
+           : ctx.lineTo(cx+r*Math.cos(a), cy+r*Math.sin(a));
+  }
+  ctx.closePath();
+}
+
+// ── HUD helpers ──────────────────────────────────────────────────
+function fmtScore(s) { return String(s).padStart(6,'0'); }
+function updateHUD() {
+  document.getElementById('h-score').textContent = fmtScore(score);
+  document.getElementById('h-best').textContent  = fmtScore(highScore);
+  document.getElementById('h-level').textContent = level;
+  let h=''; for(let i=0;i<lives;i++) h+='❤️';
+  document.getElementById('h-hearts').textContent = h;
+}
+
+// ── Overlay helpers ───────────────────────────────────────────────
+function showOverlay(title, sub, btnText) {
+  document.querySelector('.overlay-title').textContent = title;
+  document.querySelector('.overlay-sub').textContent = sub;
+  document.getElementById('startBtn').textContent = btnText;
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('overlay').classList.add('hidden');
+  score=0; lives=3; level=1; gameOver=false;
+  levelData=buildLevel(1); resetPlayer(); updateHUD();
+  running=true;
+});
+
+// ── Mobile Controls ───────────────────────────────────────────────
+(function buildMobile() {
+  const bar = document.createElement('div');
+  bar.style.cssText='display:flex;gap:10px;justify-content:center;padding:10px 0 4px;';
+  const btns=[
+    {label:'←',code:'ArrowLeft'},{label:'→',code:'ArrowRight'},
+    {label:'Jump',code:'Space'},{label:'Dash',code:'KeyE'},
+  ];
+  btns.forEach(({label,code})=>{
+    const b=document.createElement('button');
+    b.textContent=label;
+    b.style.cssText=`
+      font-family:'Press Start 2P',monospace;font-size:10px;
+      background:rgba(77,208,225,0.15);border:1px solid rgba(77,208,225,0.35);
+      color:#4dd0e1;padding:10px 14px;border-radius:4px;cursor:pointer;
+      -webkit-user-select:none;user-select:none;touch-action:none;
+    `;
+    b.addEventListener('touchstart',e=>{e.preventDefault();keys[code]=true;});
+    b.addEventListener('touchend',  e=>{e.preventDefault();keys[code]=false;});
+    b.addEventListener('mousedown', ()=>keys[code]=true);
+    b.addEventListener('mouseup',   ()=>keys[code]=false);
+    bar.appendChild(b);
+  });
+  document.getElementById('game-wrap').insertAdjacentElement('afterend', bar);
+})();
+
+// ── Main Loop ────────────────────────────────────────────────────
+let last = 0;
+function loop(now) {
+  const dt = Math.min((now-last)/1000, 0.05);
+  last = now;
+  update(dt);
+  draw(now);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(t => { last=t; loop(t); });
+</script>
+</body>
+</html>
